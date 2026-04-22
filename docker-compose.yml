@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: smart_car_wash_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  api_gateway:
+    build: ./backend/api_gateway
+    container_name: api_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth_service:8001
+      - SERVICE_MGMT_URL=http://service_mgmt_service:8002
+      - BOOKING_SERVICE_URL=http://booking_service:8003
+      - NOTIFICATION_SERVICE_URL=http://notification_service:8004
+    depends_on:
+      - auth_service
+      - service_mgmt_service
+      - booking_service
+      - notification_service
+
+  auth_service:
+    build: ./backend/auth_service
+    container_name: auth_service
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - SECRET_KEY=b2c14041b6170e3ed5c52c7be025bc4605cb4c8d522f254b76dfa51052210886
+
+    depends_on:
+      - mongodb
+
+  service_mgmt_service:
+    build: ./backend/service_mgmt_service
+    container_name: service_mgmt_service
+    ports:
+      - "8002:8002"
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - SECRET_KEY=b2c14041b6170e3ed5c52c7be025bc4605cb4c8d522f254b76dfa51052210886
+    depends_on:
+      - mongodb
+
+  booking_service:
+    build: ./backend/booking_service
+    container_name: booking_service
+    ports:
+      - "8003:8003"
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - SECRET_KEY=b2c14041b6170e3ed5c52c7be025bc4605cb4c8d522f254b76dfa51052210886
+      - NOTIFICATION_SERVICE_URL=http://notification_service:8004
+    depends_on:
+      - mongodb
+      - notification_service
+
+  notification_service:
+    build: ./backend/notification_service
+    container_name: notification_service
+    ports:
+      - "8004:8004"
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - SECRET_KEY=b2c14041b6170e3ed5c52c7be025bc4605cb4c8d522f254b76dfa51052210886
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_data:
